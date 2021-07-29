@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
     <!--存放落盘日志的路径-->
-    <property name="LOG_HOME" value="/export/gmall-SparkStreaming/rollLog/appLog"/>
+    <property name="LOG_HOME" value="/export/gmall_SparkStreaming/rollLog/appLog"/>
     <!--    控制台的配置-->
     <appender name="console" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
