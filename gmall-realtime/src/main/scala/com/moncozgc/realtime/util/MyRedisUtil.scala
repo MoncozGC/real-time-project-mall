@@ -8,8 +8,14 @@ import redis.clients.jedis.{Jedis, JedisPool, JedisPoolConfig}
  * Created by MoncozGC on 2021/7/28
  */
 object MyRedisUtil {
+  // 定义一个连接池对象
   var jedisPool: JedisPool = null
 
+  /**
+   * 获取Jedis客户端
+   *
+   * @return
+   */
   def getJedisClient(): Jedis = {
     if (jedisPool == null) {
       build()
@@ -17,6 +23,9 @@ object MyRedisUtil {
     jedisPool.getResource
   }
 
+  /**
+   * 创建JedisPool连接池对象
+   */
   def build(): Unit = {
     val config = MyPropertiesUtil.load("config.properties")
     val host = config.getProperty("redis.host")

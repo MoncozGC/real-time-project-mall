@@ -172,7 +172,7 @@ object MyESUtil {
   }
 
   /**
-   *
+   * 根据指定查询条件，从ES中查询多个文档  方式2
    */
   def queryIndexByCondition2(): Unit = {
     val jestClient: JestClient = getJestClient()
