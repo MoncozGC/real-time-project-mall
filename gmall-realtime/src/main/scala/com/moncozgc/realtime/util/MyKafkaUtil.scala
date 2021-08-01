@@ -32,8 +32,15 @@ object MyKafkaUtil {
     "enable.auto.commit" -> (false: java.lang.Boolean)
   )
 
-  // 创建 DStream，返回接收到的输入数据
+  /**
+   * 接收topic和context, 使用默认的消费者组进行消费
+   *
+   * @param topic
+   * @param ssc
+   * @return
+   */
   def getKafkaStream(topic: String, ssc: StreamingContext): InputDStream[ConsumerRecord[String, String]] = {
+    // 创建 DStream，返回接收到的输入数据
     val dStream = KafkaUtils.createDirectStream[String, String](
       ssc,
       LocationStrategies.PreferConsistent,
@@ -42,6 +49,14 @@ object MyKafkaUtil {
     dStream
   }
 
+  /**
+   * 接收topic和context, 使用指定的消费者组ID对topic进行消费
+   *
+   * @param topic
+   * @param ssc
+   * @param groupId
+   * @return
+   */
   def getKafkaStream(topic: String, ssc: StreamingContext, groupId: String):
   InputDStream[ConsumerRecord[String, String]] = {
     kafkaParam("group.id") = groupId
@@ -52,6 +67,16 @@ object MyKafkaUtil {
     dStream
   }
 
+  /**
+   * 接收topic和context, 使用指定的消费者组ID对topic进行消费
+   * 以及指定主题分区偏移量, 会从指定的偏移量处开始消费
+   *
+   * @param topic
+   * @param ssc
+   * @param offsets
+   * @param groupId
+   * @return
+   */
   def getKafkaStream(topic: String, ssc: StreamingContext, offsets: Map[TopicPartition, Long], groupId: String)
   : InputDStream[ConsumerRecord[String, String]] = {
     kafkaParam("group.id") = groupId
