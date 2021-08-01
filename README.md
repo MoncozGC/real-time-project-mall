@@ -1,6 +1,8 @@
 # 实时项目-SparkStreaming
 
 实时项目
+
+```txt
 ├──gmall-logger
 	├──接收"日志发送器数据"，然后将日志根据分类发送到对应的Kafka主题中
 	├──启动日志：moncozgc-start
@@ -27,6 +29,9 @@
 	├────MyRedisUtil类: 获取Jedis客户端的工具类
 	├────────getJedisClient(): 获取Jedis客户端
 	├────────build(): 创建JedisPool连接池对象
+```
+
+
 
 ## DauApp类中实现功能
 1. 功能 1: SparkStreaming 消费 kafka 数据 ✔
