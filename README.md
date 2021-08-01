@@ -1,6 +1,6 @@
 # 实时项目-SparkStreaming
 
-实时项目
+## 整体构造
 
 ```txt
 ├──gmall-logger
@@ -36,3 +36,10 @@
 ## DauApp类中实现功能
 1. 功能 1: SparkStreaming 消费 kafka 数据 ✔
 2. 功能 2: 利用 Redis 过滤当日已经计入的日活设备 ✔
+
+## util中实现的功能
+
+1. MyESUtil类: 写入数据到ES、查询ES数据工具类
+2. MyKafkaUtil类: 读取Kafka的工具类
+3. MyPropertiesUtil类: 配置文件加载工具类
+4. MyRedisUtil类: 获取Jedis客户端的工具类
