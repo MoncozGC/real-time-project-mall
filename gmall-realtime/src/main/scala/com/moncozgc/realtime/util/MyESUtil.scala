@@ -2,6 +2,7 @@ package com.moncozgc.realtime.util
 
 import java.util
 
+import com.moncozgc.realtime.bean.DauInfo
 import io.searchbox.client.config.HttpClientConfig
 import io.searchbox.client.{JestClient, JestClientFactory}
 import io.searchbox.core._
@@ -12,9 +13,6 @@ import org.elasticsearch.search.sort.SortOrder
 
 /**
  * 操作ES的工具类
- *
- * Builder设计模式的好处是我们可以随意组合类相同类型输入的参数，不仅避免了方法重载出错的问题，还不需要写过多的构造器。
- * 实现方法就是在User内部创建一个内部类，并且拥有和User一样的字段（属性），并且提供SET方法，最重要的是要提供一个能够返回User对象的方法（build），这样才能通过Builder来创建User对象。
  *
  * Created by MoncozGC on 2021/7/26
  */
@@ -63,6 +61,11 @@ object MyESUtil {
       """.stripMargin
     //创建插入类 Index   Builder中的参数表示要插入到索引中的文档，底层会转换Json格式的字符串，所以也可以将文档封装为样例类对象
     // 不是直接构建的外部对象,而是通过构造者设计模式,通过内部类对象来创建对象 内部类对象就是Bulider
+    /**
+     * Builder设计模式的好处是我们可以随意组合类相同类型输入的参数，不仅避免了方法重载出错的问题，还不需要写过多的构造器。
+     * 实现方法就是在User内部创建一个内部类，并且拥有和User一样的字段（属性），并且提供SET方法，最重要的是要提供一个能够返回User对象的方法（build），这样才能通过Builder来创建User对象。
+     *
+     */
     val index: Index = new Index.Builder(source)
       .index("movie_index_5")
       .`type`("movie")
@@ -101,6 +104,33 @@ object MyESUtil {
 
     // 关闭链接
     jestClient.close()
+  }
+
+  /**
+   * 向ES中批量插入数据
+   *
+   * @param dauInfList 分区中需要保存的ES日活数据
+   * @param indexName  索引名称
+   */
+  def bulkInsert(dauInfList: List[DauInfo], indexName: String): Unit = {
+    if (dauInfList != null && dauInfList.size != 0) {
+      // 获取客户d端
+      val jestClient: JestClient = getJestClient()
+      val bulkBuilder: Bulk.Builder = new Bulk.Builder()
+      // 遍历日活对象
+      for (dauInfo <- dauInfList) {
+        val index: Index = new Index.Builder(dauInfo)
+          .index(indexName).`type`("_doc")
+          .build()
+        bulkBuilder.addAction(index)
+      }
+
+      // 创建批量操作对象
+      val bulk: Bulk = bulkBuilder.build()
+      val bulkResult: BulkResult = jestClient.execute(bulk)
+      println("向ES中插入" + bulkResult.getItems.size() + "多少条")
+      jestClient.close()
+    }
   }
 
   /**
