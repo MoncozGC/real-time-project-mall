@@ -6,10 +6,13 @@ import java.util.Date
 
 import com.alibaba.fastjson.{JSON, JSONObject}
 import com.moncozgc.realtime.bean.DauInfo
-import com.moncozgc.realtime.util.{MyESUtil, MyKafkaUtil, MyRedisUtil}
+import com.moncozgc.realtime.util.{MyESUtil, MyKafkaUtil, MyRedisUtil, OffsetManagerUtil}
 import org.apache.kafka.clients.consumer.ConsumerRecord
+import org.apache.kafka.common.TopicPartition
 import org.apache.spark.SparkConf
+import org.apache.spark.rdd.RDD
 import org.apache.spark.streaming.dstream.{DStream, InputDStream}
+import org.apache.spark.streaming.kafka010.{HasOffsetRanges, OffsetRange}
 import org.apache.spark.streaming.{Seconds, StreamingContext}
 import redis.clients.jedis.Jedis
 
@@ -27,15 +30,43 @@ object DauApp {
     val conf: SparkConf = new SparkConf().setMaster("local[4]").setAppName("DauApp")
     val ssc: StreamingContext = new StreamingContext(conf, Seconds(5))
     val topic: String = "moncozgc-start"
-    val groupId: String = "mall-dau"
+    val groupId: String = "gmall-dau"
 
-    val kafkaDStream: InputDStream[ConsumerRecord[String, String]] = MyKafkaUtil.getKafkaStream(topic, ssc, groupId)
+    // TODO 功能(优化)4.1.1 从Redis中获取Kafka的偏移量
+    val offsetMap: Map[TopicPartition, Long] = OffsetManagerUtil.getOffset(topic, groupId)
+    // 记录偏移量
+    var recordDStream: InputDStream[ConsumerRecord[String, String]] = null
+    if (offsetMap != null && offsetMap.size > 0) {
+      // 如果Redis中存在当前消费者组对该主题的偏移量信息, 那么从执行的偏移量位置开始消费
+      recordDStream = MyKafkaUtil.getKafkaStream(topic, ssc, offsetMap, groupId)
+    } else {
+      // 如果Redis中没有当前消费者组对该主题的偏移量信息, 那么还是按照配置, 从最新位置开始消费
+      recordDStream = MyKafkaUtil.getKafkaStream(topic, ssc, groupId)
+    }
+
+    // TODO 功能(优化)4.1.2 获取当前采集周期从Kafka中消费的数据的起始偏移量以及结束偏移量值
+    // 从 Kafka 中读取数据之后，直接就获取了偏移量的位置，因为 KafkaRDD 可以转换为HasOffsetRanges，会自动记录位置
+    var offsetRanges = Array.empty[OffsetRange]
+    // 将RDD的值取出来不会做任何改变, 首选transform算子, 还有foreachRDD但是现在还不用提交
+    val offsetDStream: DStream[ConsumerRecord[String, String]] = recordDStream.transform {
+      rdd: RDD[ConsumerRecord[String, String]] => {
+        // 因为recodeDStream底层封装的是KafkaRDD，混入了HasOffsetRanges特质，这个特质中提供了可以获取偏移量范围的方法
+        // 转换成父类, 通过父类HasOffsetRanges定义的方法子类rdd可以自己访问, 通过调用父类使用offsetRanges
+        offsetRanges = rdd.asInstanceOf[HasOffsetRanges].offsetRanges
+        // 还是返回这个RDD
+        rdd
+      }
+    }
+
+    // TODO 功能(未优化3前)1 通过SparkStreaming消费Kafka中的数据, 现使用从Redis中获取Kafka的偏移量方式
+    // val kafkaDStream: InputDStream[ConsumerRecord[String, String]] = MyKafkaUtil.getKafkaStream(topic, ssc, groupId)
+
     // 生成的启动日志, 只获取value部分
-    val jsonDStream: DStream[String] = kafkaDStream.map(_.value())
+    val jsonDStream: DStream[String] = offsetDStream.map(_.value())
     // 打印未加时间的字符串
     //jsonDStream.print(1000)
 
-    val jsonObjDStream: DStream[JSONObject] = kafkaDStream.map {
+    val jsonObjDStream: DStream[JSONObject] = offsetDStream.map {
       record => {
         val jsonString: String = record.value()
         // 将JSON格式字符串转化为JSON对象
@@ -56,7 +87,8 @@ object DauApp {
     }
     //jsonObjDStream.print(1000)
 
-    /** // 通过Redis 对采集到的启动日志进行去重操作 方案1  采集周期中的每条数据都要获取一次Redis连接, 连接过于频繁
+    // TODO 功能(新增)2 方案1  采集周期中的每条数据都要获取一次Redis连接, 连接过于频繁
+    /** // 通过Redis 对采集到的启动日志进行去重操作
      * // redis 类型 Set   key dau:2021-0801  member: mid  expire 3600*24
      * val filteredDStream: DStream[JSONObject] = jsonObjDStream.filter {
      * jsonObj => {
@@ -88,7 +120,8 @@ object DauApp {
      * }
      * } */
 
-    // 通过Redis 对采集到的启动日志进行去重操作 方案2  以分区为单位对数据进行处理, 每一个分区获取一次Redis的连接
+    // TODO 功能(新增)2 方案2  以分区为单位对数据进行处理, 每一个分区获取一次Redis的连接
+    // 通过Redis 对采集到的启动日志进行去重操作
     // redis 类型 Set   key dau:2021-0801  member: mid  expire 3600*24
     val filteredDStream: DStream[JSONObject] = jsonObjDStream.mapPartitions {
       // 以分区为单位进行处理
@@ -124,18 +157,19 @@ object DauApp {
     // 输出每次登录的设备
     //filteredDStream.count().print()
 
-    // 将数据批量的保存到ES中
+    // TODO 功能(新增)3 将数据批量的保存到ES中
     filteredDStream.foreachRDD {
       rdd => {
         // 以分区为单位 对数据进行处理
         rdd.foreachPartition {
           jsonObjItr => {
-            // 当前这个分区中需要保存的ES日活数据
-            val dauInfList: List[DauInfo] = jsonObjItr.map {
+            // TODO 功能(优化)4.2 保证幂等性，ES数据去重
+            // 通过传入mid保证幂等性 以及 当前这个分区中需要保存的ES日活数据
+            val dauInfoList: List[(String, DauInfo)] = jsonObjItr.map {
               // 每次处理的是一个JSON对象, 将JSON对象封装为样例类
               jsonObj => {
                 val commonJSONObj: JSONObject = jsonObj.getJSONObject("common")
-                DauInfo(
+                val dauInfo: DauInfo = DauInfo(
                   commonJSONObj.getString("mid"),
                   commonJSONObj.getString("uid"),
                   commonJSONObj.getString("ar"),
@@ -146,15 +180,18 @@ object DauApp {
                   "00", // 分钟前面没有转换, 默认00
                   jsonObj.getLong("ts")
                 )
+                // 将mid写入到es中代替es文档中的id
+                (dauInfo.mid, dauInfo)
               }
             }.toList
-            dauInfList
             // 将数据批量保存到ES中
             // 需要传入当前日期
             val dt: String = new SimpleDateFormat("yyyy-MM-dd").format(new Date())
-            MyESUtil.bulkInsert(dauInfList, "gmall_dau_info" + dt)
+            MyESUtil.bulkInsert(dauInfoList, "gmall_dau_info_" + dt)
           }
         }
+        // TODO 功能(优化)4.1.3 提交偏移量到Redis中
+        OffsetManagerUtil.saveOffset(topic, groupId, offsetRanges)
       }
     }
 
