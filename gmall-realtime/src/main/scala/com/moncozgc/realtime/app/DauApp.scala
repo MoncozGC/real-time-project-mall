@@ -5,7 +5,8 @@ import java.text.SimpleDateFormat
 import java.util.Date
 
 import com.alibaba.fastjson.{JSON, JSONObject}
-import com.moncozgc.realtime.util.{MyKafkaUtil, MyRedisUtil}
+import com.moncozgc.realtime.bean.DauInfo
+import com.moncozgc.realtime.util.{MyESUtil, MyKafkaUtil, MyRedisUtil}
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.spark.SparkConf
 import org.apache.spark.streaming.dstream.{DStream, InputDStream}
@@ -121,7 +122,41 @@ object DauApp {
       }
     }
     // 输出每次登录的设备
-    filteredDStream.count().print()
+    //filteredDStream.count().print()
+
+    // 将数据批量的保存到ES中
+    filteredDStream.foreachRDD {
+      rdd => {
+        // 以分区为单位 对数据进行处理
+        rdd.foreachPartition {
+          jsonObjItr => {
+            // 当前这个分区中需要保存的ES日活数据
+            val dauInfList: List[DauInfo] = jsonObjItr.map {
+              // 每次处理的是一个JSON对象, 将JSON对象封装为样例类
+              jsonObj => {
+                val commonJSONObj: JSONObject = jsonObj.getJSONObject("common")
+                DauInfo(
+                  commonJSONObj.getString("mid"),
+                  commonJSONObj.getString("uid"),
+                  commonJSONObj.getString("ar"),
+                  commonJSONObj.getString("ch"),
+                  commonJSONObj.getString("vc"),
+                  jsonObj.getString("dt"),
+                  jsonObj.getString("hr"),
+                  "00", // 分钟前面没有转换, 默认00
+                  jsonObj.getLong("ts")
+                )
+              }
+            }.toList
+            dauInfList
+            // 将数据批量保存到ES中
+            // 需要传入当前日期
+            val dt: String = new SimpleDateFormat("yyyy-MM-dd").format(new Date())
+            MyESUtil.bulkInsert(dauInfList, "gmall_dau_info" + dt)
+          }
+        }
+      }
+    }
 
     // 开始执行流
     ssc.start()
