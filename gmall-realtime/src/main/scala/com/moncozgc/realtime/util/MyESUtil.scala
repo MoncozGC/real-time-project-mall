@@ -108,19 +108,21 @@ object MyESUtil {
 
   /**
    * 向ES中批量插入数据
+   * id中加入mid,保证幂等性
    *
-   * @param dauInfList 分区中需要保存的ES日活数据
+   * @param dauInfList mid, 分区中需要保存的ES日活数据
    * @param indexName  索引名称
    */
-  def bulkInsert(dauInfList: List[DauInfo], indexName: String): Unit = {
+  def bulkInsert(dauInfList: List[(String, DauInfo)], indexName: String): Unit = {
     if (dauInfList != null && dauInfList.size != 0) {
       // 获取客户d端
       val jestClient: JestClient = getJestClient()
       val bulkBuilder: Bulk.Builder = new Bulk.Builder()
-      // 遍历日活对象
-      for (dauInfo <- dauInfList) {
+      // 遍历日活对象 加入mid,保证幂等性
+      for ((id, dauInfo) <- dauInfList) {
         val index: Index = new Index.Builder(dauInfo)
-          .index(indexName).`type`("_doc")
+          // TODO 功能(优化)4.2 保证幂等性，添加mid
+          .index(indexName).id(id).`type`("_doc")
           .build()
         bulkBuilder.addAction(index)
       }
