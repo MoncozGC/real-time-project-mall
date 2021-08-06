@@ -187,6 +187,8 @@ object DauApp {
             // 将数据批量保存到ES中
             // 需要传入当前日期
             val dt: String = new SimpleDateFormat("yyyy-MM-dd").format(new Date())
+            // 指定时间
+            //val dt: String = "2021-08-04"
             MyESUtil.bulkInsert(dauInfoList, "gmall_dau_info_" + dt)
           }
         }
