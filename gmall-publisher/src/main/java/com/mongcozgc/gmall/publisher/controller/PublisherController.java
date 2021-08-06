@@ -1,15 +1,12 @@
 package com.mongcozgc.gmall.publisher.controller;
 
 import com.mongcozgc.gmall.publisher.service.ESService;
-
 import org.apache.commons.lang3.time.DateUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
