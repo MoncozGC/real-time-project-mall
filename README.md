@@ -3,12 +3,14 @@
 ## 整体构造
 
 ```txt
-├──gmall-logger
+├──gmall-logger工程，上报数据到kafka；启动端口：8989
 	├──接收"日志发送器数据"，然后将日志根据分类发送到对应的Kafka主题中
 	├──启动日志：moncozgc-start
 	├──时间日志：moncozgc-event
+	├──Controller
+	├────LoggerController: 接收模拟器生成的数据，并对数据进行处理，分类保存数据到Kafka
 
-├──gmall-realtime
+├──gmall-realtime工程，处理数据；无启动端口
 	├──app包
 	├────DauApp类: 实现日活业务功能
 	├────────jsonDStream: 打印启动日志的全部日志
@@ -17,6 +19,8 @@
 	├────────filteredDStream: 方案2  以分区为单位对数据进行处理, 每一个分区获取一次Redis的连接
 	├────────recordDStream: 记录偏移量(从redis中，redis中没有则重新获取)
 	├────────offsetDStream: 得到本批次中处理数据的分区对应的偏移量起始及结束位置
+	├──bean包
+	├────DauInfo: 封装日活的样例类
 	├──util包
 	├────MyESUtil类: 写入数据到ES、查询ES数据工具类
 	├────────putIndex1(): 插入单条数据, 将插入文档的数据以json的形式直接传递
@@ -31,11 +35,30 @@
 	├────MyRedisUtil类: 获取Jedis客户端的工具类
 	├────────getJedisClient(): 获取Jedis客户端
 	├────────build(): 创建JedisPool连接池对象
+	
+├──gmall-publisher工程，数据接口；启动端口：8070
+	├────controller包
+	├────────PublisherController类: getDauTotal，获取某天的日活数据；getDauHour，查询某天某时段的日活数
+	├────service包
+	├────────impl包
+	├───────────ESServiceImpl类：实现ElasticSearch数据接口，getDauTotal，获取某天的日活数据；getDauHour，查询某天某时段的日活数
+	├────────ESService类:查询ElasticSearch数据接口
+	├────resource 配置文件
+	├────────application.properties：配置Spring端口；ES服务器地址
+
+├──dw-chart工程，获取接口的数据前端展示项目；启动端口：8090
 ```
 
 
 
-## DauApp类中实现功能
+## 实现的功能
+
+- **gmall-logger**
+
+1. 接收"日志发送器数据"，然后将日志根据分类发送到对应的Kafka主题中
+
+- **gmall-realtime**
+
 1. 功能 1: SparkStreaming 消费 kafka 数据 ✔
 2. 功能 2: 利用 Redis 过滤当日已经计入的日活设备 ✔
 3. 功能 3：把每批次新增的当日日活信息保存到 ES 中 ✔
@@ -43,13 +66,46 @@
    1. 手动提交偏移量，将偏移量保存到Redis中
    2. 保证幂等性，ES数据去重
 
-5. 功能 5 数据展示
+- **gmall-publisher**
+
+5. 功能 5 从 ES 中查询出数据，发布成数据接口，可视化工程进行调用
+   1. 使用Spring项目，从ES中获取每天的日活数以及每个时段的日活数
+   2. 导入前端项目(**du-chart**)，获取Spring提供的接口，展示数据
 
 
 
-## util中实现的功能
+## 类的作用
+
+- **gmall-logger - controller**
+
+1. LoggerController类：接收模拟器生成的数据，并对数据进行处理
+
+- **gmall-realtime - app**
+
+1. DauApp类：日活业务
+
+- **gmall-realtime - util**
 
 1. MyESUtil类: 写入数据到ES、查询ES数据工具类
 2. MyKafkaUtil类: 读取Kafka的工具类
 3. MyPropertiesUtil类: 配置文件加载工具类
 4. MyRedisUtil类: 获取Jedis客户端的工具类
+5. OffSetManagerUtil类：维护偏移量的工具类
+6. getDate类：获取当前时间的前几天时间
+
+- **gmall-realtime - bean**
+
+1. DauInfo类：封装日活的样例类
+
+- **gmall-publisher - controller**
+
+1. PublisherController类: 通过接口获取数据以及拦截请求进行页面展示
+
+- **gmall-publisher - service**
+
+1. ESService类：查询ElasticSearch数据接口
+2. impl包-ESServiceImpl类：实现ElasticSearch数据接口，提供查询某天的日活数以及某天某时段的日活数
+
+- **dw-chart**
+
+1. 前端工程展示数据项目
