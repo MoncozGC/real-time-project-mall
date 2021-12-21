@@ -20,7 +20,7 @@ public class PublisherController {
     ESService esService;
 
     /**
-     * 获取当天新增的日活和设备
+     * TODO 功能(新增)5.1 获取当天新增的日活和设备
      * 响应地址:
      * http://publisher:8070/realtime-total?date=2021-08-03
      *
@@ -66,6 +66,8 @@ public class PublisherController {
     }
 
     /**
+     * TODO 功能(新增)5.2 获取某天某时段的日活数据
+     *
      * 响应地址:
      * http://publisher:8070/realtime-hour?id=dau&date=2019-02-01
      *
