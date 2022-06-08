@@ -1,5 +1,62 @@
 # 实时项目-SparkStreaming
 
+## 服务器
+
+| 主机名 | ip              | 用途                  |
+| ------ | --------------- | --------------------- |
+| pro01  | 192.168.153.140 | Redis/ES/Kibana/Nginx |
+|        |                 |                       |
+|        |                 |                       |
+
+```txt
+服务器环境以及框架版本
+Centos7 3台
+JDK1.8
+MySQL 5.6
+Hadoop 3.1.3
+Zookeeper 3.5.7
+Kafka2.4.1
+Hbase2.2.4
+Phoenix 5.1.0
+Redis 3.2.5
+Scala2.12
+Spark 3.0.0
+
+
+Nginx1.12.2
+Canal1.1.4
+Maxwel11.25.0
+ElasticSearch 6.6.0
+ClickHouse 20.4.5.36
+SpringBoot
+Datay
+```
+
+## 服务启动
+
+1. Nginx 负载均衡
+   - 启动: 192.168.153.140 /data/nginx/sbin/nginx
+   - 停止: /data/nginx/sbin/nginx -s stop
+2. gmall-logger-0.0.1-SNAPSHOT.jar 发送日志服务
+   - 192.168.153.100: java -jar /export/gmall_SparkStreaming/gmall-logger-0.0.3-SNAPSHOT.jar
+   - 192.168.153.101: java -jar /export/gmall_SparkStreaming/gmall-logger-0.0.3-SNAPSHOT.jar
+   - 192.168.153.102: java -jar /export/gmall_SparkStreaming/gmall-logger-0.0.3-SNAPSHOT.jar
+3. kafka消费者[start、event]topic
+   - 先启动zk: 三台都需要启动启动
+     - 启动: /export/servers/zookeeper-3.4.5-cdh5.14.0/bin/zkServer.sh start
+     - 状态: /export/servers/zookeeper-3.4.5-cdh5.14.0/bin/zkServer.sh status
+   - 再启动kafka: 三台都需要启动启动
+     - 启动: nohup /export/servers/kafka_2.11-1.0.0/bin/kafka-server-start.sh /export/servers/kafka_2.11-1.0.0/config/server.properties >> /export/servers/kafka_2.11-1.0.0/kafkaserver.log  2>&1 &
+     - 启动消费者: 192.168.153.100执行, /export/servers/kafka_2.11-1.0.0/bin/kafka-console-consumer.sh --bootstrap-server 192.168.153.100:9092 --topic moncozgc-start
+4. gmall2020-mock-log-2020-05-10.jar 
+   - 192.168.153.100执行, java -jar /export/gmall_SparkStreaming/rollLog/gmall2020-mock-log-2020-05-10.jar
+5. 启动ES
+   - 192.168.153.140 切换到elasticsearch用户启动 sh elasticsearch
+   - /data/elasticsearch-6.6.0/bin/elasticsearch -d
+6. 启动Kibanan
+   - 192.168.153.100 启动Kibanan
+   - nohup /data/kibana-6.6.0-linux-x86_64/bin/kibana &
+
 ## 整体构造
 
 ```txt

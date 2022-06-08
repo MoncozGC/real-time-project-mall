@@ -29,7 +29,8 @@ public class LoggerController {
     //@RequestBody   表示从请求体中获取数据
     @RequestMapping("/applog")
     public String applog(@RequestBody String mockLog) {
-        //System.out.println(mockLog);
+//        System.out.println(mockLog);
+//        return mockLog;
         //落盘
         log.info(mockLog);
         //根据日志的类型，发送到kafka的不同主题中去
