@@ -37,18 +37,21 @@ Datay
 1. Nginx 负载均衡
    - 启动: 192.168.153.140 /data/nginx/sbin/nginx
    - 停止: /data/nginx/sbin/nginx -s stop
-2. gmall-logger-0.0.1-SNAPSHOT.jar 发送日志服务
-   - 192.168.153.100: java -jar /export/gmall_SparkStreaming/gmall-logger-0.0.3-SNAPSHOT.jar
-   - 192.168.153.101: java -jar /export/gmall_SparkStreaming/gmall-logger-0.0.3-SNAPSHOT.jar
-   - 192.168.153.102: java -jar /export/gmall_SparkStreaming/gmall-logger-0.0.3-SNAPSHOT.jar
+2. gmall-logger-0.0.1-SNAPSHOT.jar `接受日志服务转发至Kafka`
+   - 192.168.153.100: java -jar /export/gmall_SparkStreaming/gmall-logger-RELEASE.jar
+   - 192.168.153.101: java -jar /export/gmall_SparkStreaming/gmall-logger-RELEASE.jar
+   - 192.168.153.102: java -jar /export/gmall_SparkStreaming/gmall-logger-RELEASE.jar
 3. kafka消费者[start、event]topic
    - 先启动zk: 三台都需要启动启动
      - 启动: /export/servers/zookeeper-3.4.5-cdh5.14.0/bin/zkServer.sh start
+
      - 状态: /export/servers/zookeeper-3.4.5-cdh5.14.0/bin/zkServer.sh status
-   - 再启动kafka: 三台都需要启动启动
+       - 或直接执行一键脚本/export/servers/zookeeper-3.4.5-cdh5.14.0/startZKServers.sh 三台都会执行
+   - 再启动kafka: 三台都需要启动
      - 启动: nohup /export/servers/kafka_2.11-1.0.0/bin/kafka-server-start.sh /export/servers/kafka_2.11-1.0.0/config/server.properties >> /export/servers/kafka_2.11-1.0.0/kafkaserver.log  2>&1 &
      - 启动消费者: 192.168.153.100执行, /export/servers/kafka_2.11-1.0.0/bin/kafka-console-consumer.sh --bootstrap-server 192.168.153.100:9092 --topic moncozgc-start
-4. gmall2020-mock-log-2020-05-10.jar 
+4. gmall2020-mock-log-2020-05-10.jar `发送日志`
+   
    - 192.168.153.100执行, java -jar /export/gmall_SparkStreaming/rollLog/gmall2020-mock-log-2020-05-10.jar
 5. 启动ES
    - 192.168.153.140 切换到elasticsearch用户启动 sh elasticsearch
