@@ -1,10 +1,10 @@
 package com.moncozgc.realtime.util
 
-import java.util
-
 import org.apache.kafka.common.TopicPartition
 import org.apache.spark.streaming.kafka010.OffsetRange
 import redis.clients.jedis.Jedis
+
+import java.util
 
 /**
  * 维护偏移量的工具类
@@ -22,7 +22,7 @@ object OffsetManagerUtil {
    */
   def getOffset(topic: String, groupId: String): Map[TopicPartition, Long] = {
     // 获取Jedis客户端
-    val jedis: Jedis = MyRedisUtil.getJedisClient()
+    val jedis: Jedis = MyRedisUtil.getJedisClient
 
     // 拼接key Hash, key: offset:topic:groupId   filed: partition  key:offset
     var offsetKey: String = "offset:" + topic + ":" + groupId
@@ -77,7 +77,7 @@ object OffsetManagerUtil {
       println("保存分区: " + partitionId + ":" + fromOffset + "------>" + untilOffset)
     }
     // 获取Jedis客户端
-    val jedis: Jedis = MyRedisUtil.getJedisClient()
+    val jedis: Jedis = MyRedisUtil.getJedisClient
     // 保存数据到Redis中
     jedis.hmset(offsetKey, offsetMap)
     // 关闭Jedis客户端

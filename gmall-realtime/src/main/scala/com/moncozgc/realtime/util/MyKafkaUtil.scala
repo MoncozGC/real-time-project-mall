@@ -1,13 +1,13 @@
 package com.moncozgc.realtime.util
 
-import java.util.Properties
-
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.common.TopicPartition
 import org.apache.kafka.common.serialization.StringDeserializer
 import org.apache.spark.streaming.StreamingContext
 import org.apache.spark.streaming.dstream.InputDStream
 import org.apache.spark.streaming.kafka010.{ConsumerStrategies, KafkaUtils, LocationStrategies}
+
+import java.util.Properties
 
 
 /**
@@ -17,7 +17,18 @@ import org.apache.spark.streaming.kafka010.{ConsumerStrategies, KafkaUtils, Loca
  */
 object MyKafkaUtil {
   private val properties: Properties = MyPropertiesUtil.load("config.properties")
-  val broker_list = properties.getProperty("kafka.broker.list")
+  val broker_list: String = properties.getProperty("kafka.broker.list")
+
+  // 配置文件写法
+  //  val kafkaParam: mutable.Map[String, io.Serializable] = collection.mutable.Map(
+  //    ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG -> broker_list,
+  //    ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG -> classOf[StringDeserializer],
+  //    ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG -> classOf[StringDeserializer],
+  //    ConsumerConfig.GROUP_ID_CONFIG -> "gmall",
+  //    ConsumerConfig.AUTO_OFFSET_RESET_CONFIG -> "latest",
+  //    ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG -> (false: lang.Boolean)
+  //  )
+
   // kafka 消费者配置
   var kafkaParam = collection.mutable.Map(
     "bootstrap.servers" -> broker_list, //用于初始化链接到集群的地址
@@ -41,7 +52,7 @@ object MyKafkaUtil {
    */
   def getKafkaStream(topic: String, ssc: StreamingContext): InputDStream[ConsumerRecord[String, String]] = {
     // 创建 DStream，返回接收到的输入数据
-    val dStream = KafkaUtils.createDirectStream[String, String](
+    val dStream: InputDStream[ConsumerRecord[String, String]] = KafkaUtils.createDirectStream[String, String](
       ssc,
       LocationStrategies.PreferConsistent,
       ConsumerStrategies.Subscribe[String, String](Array(topic), kafkaParam)
@@ -60,7 +71,7 @@ object MyKafkaUtil {
   def getKafkaStream(topic: String, ssc: StreamingContext, groupId: String):
   InputDStream[ConsumerRecord[String, String]] = {
     kafkaParam("group.id") = groupId
-    val dStream = KafkaUtils.createDirectStream[String, String](
+    val dStream: InputDStream[ConsumerRecord[String, String]] = KafkaUtils.createDirectStream[String, String](
       ssc,
       LocationStrategies.PreferConsistent,
       ConsumerStrategies.Subscribe[String, String](Array(topic), kafkaParam))
@@ -80,7 +91,7 @@ object MyKafkaUtil {
   def getKafkaStream(topic: String, ssc: StreamingContext, offsets: Map[TopicPartition, Long], groupId: String)
   : InputDStream[ConsumerRecord[String, String]] = {
     kafkaParam("group.id") = groupId
-    val dStream = KafkaUtils.createDirectStream[String, String](
+    val dStream: InputDStream[ConsumerRecord[String, String]] = KafkaUtils.createDirectStream[String, String](
       ssc,
       LocationStrategies.PreferConsistent,
       ConsumerStrategies.Subscribe[String, String](Array(topic), kafkaParam, offsets))

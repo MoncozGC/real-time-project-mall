@@ -1,9 +1,5 @@
 package com.moncozgc.realtime.app
 
-import java.lang
-import java.text.SimpleDateFormat
-import java.util.Date
-
 import com.alibaba.fastjson.{JSON, JSONObject}
 import com.moncozgc.realtime.bean.DauInfo
 import com.moncozgc.realtime.util.{MyESUtil, MyKafkaUtil, MyRedisUtil, OffsetManagerUtil}
@@ -16,6 +12,9 @@ import org.apache.spark.streaming.kafka010.{HasOffsetRanges, OffsetRange}
 import org.apache.spark.streaming.{Seconds, StreamingContext}
 import redis.clients.jedis.Jedis
 
+import java.lang
+import java.text.SimpleDateFormat
+import java.util.Date
 import scala.collection.mutable.ListBuffer
 
 /**
@@ -36,7 +35,7 @@ object DauApp {
     val offsetMap: Map[TopicPartition, Long] = OffsetManagerUtil.getOffset(topic, groupId)
     // 记录偏移量
     var recordDStream: InputDStream[ConsumerRecord[String, String]] = null
-    if (offsetMap != null && offsetMap.size > 0) {
+    if (offsetMap != null && offsetMap.nonEmpty) {
       // 如果Redis中存在当前消费者组对该主题的偏移量信息, 那么从执行的偏移量位置开始消费
       recordDStream = MyKafkaUtil.getKafkaStream(topic, ssc, offsetMap, groupId)
     } else {
@@ -105,10 +104,10 @@ object DauApp {
      * val isFirst: lang.Long = jedis.sadd(dauKey, mid)
      * // key是否有过期时间, 没有则设置key的过期时间
      * if (jedis.ttl(dauKey) < 0) {
-     *jedis.expire(dauKey, 3600 * 24)
+     * jedis.expire(dauKey, 3600 * 24)
      * }
      * // 关闭连接
-     *jedis.close()
+     * jedis.close()
      * // 从redis中判断当前设备是否登录过
      * if (isFirst == 1L) {
      * // 说明是第一次登录
@@ -127,7 +126,7 @@ object DauApp {
       // 以分区为单位进行处理
       jsonObjItr => {
         // 每一个分区获取一次Redis的连接
-        val jedis: Jedis = MyRedisUtil.getJedisClient()
+        val jedis: Jedis = MyRedisUtil.getJedisClient
         // 定义一个集合, 用于存放当前分区中第一次登录的日志
         val filteredList: ListBuffer[JSONObject] = new ListBuffer[JSONObject]()
         // 对分区的数据进行遍历

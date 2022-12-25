@@ -1,7 +1,5 @@
 package com.moncozgc.realtime.util
 
-import java.util
-
 import com.moncozgc.realtime.bean.DauInfo
 import io.searchbox.client.config.HttpClientConfig
 import io.searchbox.client.{JestClient, JestClientFactory}
@@ -10,6 +8,8 @@ import org.elasticsearch.index.query.{BoolQueryBuilder, MatchQueryBuilder, TermQ
 import org.elasticsearch.search.builder.SearchSourceBuilder
 import org.elasticsearch.search.fetch.subphase.highlight.HighlightBuilder
 import org.elasticsearch.search.sort.SortOrder
+
+import java.util
 
 /**
  * 操作ES的工具类
