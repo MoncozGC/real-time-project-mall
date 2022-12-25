@@ -14,7 +14,7 @@ public interface ESService {
      * @param date 天数
      * @return 日活数
      */
-    public Long getDauTotal(String date);
+    Long getDauTotal(String date);
 
     /**
      * 查询某天某时段的日活数
@@ -22,5 +22,5 @@ public interface ESService {
      * @param date
      * @return <小时, 当前小时的活跃数>
      */
-    public Map<String, Long> getDauHour(String date);
+    Map<String, Long> getDauHour(String date);
 }
